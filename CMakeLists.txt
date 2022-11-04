@@ -123,6 +123,13 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") # uname -s
   endif()
 endif()
 
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin") # uname -s
+  if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64|arm64") # uname -m
+    set(UTHREAD ON)
+    message("-- Uthread on")
+  endif()
+endif()
+
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
