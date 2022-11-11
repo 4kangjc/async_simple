@@ -36,6 +36,8 @@ extern "C" __attribute__((__visibility__("default"))) transfer_t
 _fl_jump_fcontext(fcontext_t const to, void* vp);
 extern "C" __attribute__((__visibility__("default"))) fcontext_t
 _fl_make_fcontext(void* sp, std::size_t size, void (*fn)(transfer_t));
+extern "C" __attribute__((__visibility__("default"))) transfer_t
+_fl_ontop_fcontext(fcontext_t const to, void* vp, transfer_t (*fn)(transfer_t));
 
 class thread_context;
 
@@ -48,6 +50,7 @@ public:
     void switch_in();
     void switch_out();
     void initial_switch_in_completed();
+    void final_switch_out_completed(void*);
 };
 
 extern thread_local jmp_buf_link* g_current_context;

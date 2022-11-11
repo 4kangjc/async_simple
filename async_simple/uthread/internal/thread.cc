@@ -66,6 +66,15 @@ inline void jmp_buf_link::switch_out() {
 
 inline void jmp_buf_link::initial_switch_in_completed() {}
 
+inline void jmp_buf_link::final_switch_out_completed(void* vp) {
+    g_current_context = link;
+    _fl_ontop_fcontext(link->fcontext, vp, [](transfer_t from) {
+        auto p = static_cast<Promise<bool>*>(from.data);
+        p->setValue(true);
+        return from;
+    });
+}
+
 thread_context::thread_context(std::function<void()> func)
     : stack_size_(get_base_stack_size()), func_(std::move(func)) {
     setup();
@@ -115,12 +124,11 @@ void thread_context::main() {
     context_.initial_switch_in_completed();
     try {
         func_();
-        done_.setValue(true);
     } catch (...) {
         done_.setException(std::current_exception());
     }
 
-    context_.switch_out();
+    context_.final_switch_out_completed(&done_);
 }
 
 namespace thread_impl {
