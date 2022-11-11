@@ -1,0 +1,5 @@
+FROM archlinux
+RUN echo 'Server = http://mirrors.ustc.edu.cn/archlinux/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+RUN yes | pacman -Syyu
+RUN yes | pacman -S clang gtest libaio 
+RUN yes | pacman -S cmake bazel make
