@@ -50,6 +50,8 @@ template <typename T>
 class Future {
 public:
     using value_type = T;
+    using lvalue_reference = std::add_lvalue_reference_t<T>;
+    using rvalue_reference = std::add_rvalue_reference_t<T>;
     Future(FutureState<T>* fs) : _sharedState(fs) {
         if (_sharedState) {
             _sharedState->attachOne();
@@ -89,9 +91,16 @@ public:
         return _localState.hasResult() || _sharedState->hasResult();
     }
 
-    T&& value() && { return std::move(result().value()); }
-    T& value() & { return result().value(); }
-    const T& value() const& { return result().value(); }
+    // const rvalue_reference value() const&& requires(!std::is_void_v<T>) {
+    // return std::move(result().value()); }
+    rvalue_reference value() && requires(!std::is_void_v<T>) {
+        return std::move(result().value());
+    }
+    lvalue_reference value() & { return result().value(); }
+    const lvalue_reference value() const& { return result().value(); }
+
+    void value() const&& requires(std::is_void_v<T>) { return; }
+    void value() && requires(std::is_void_v<T>) { return; }
 
     Try<T>&& result() && { return std::move(getTry(*this)); }
     Try<T>& result() & { return getTry(*this); }
@@ -164,7 +173,11 @@ public:
     template <typename F, typename R = ValueCallableResult<T, F>>
     Future<typename R::ReturnsFuture::Inner> thenValue(F&& f) && {
         auto lambda = [func = std::forward<F>(f)](Try<T>&& t) mutable {
-            return std::forward<F>(func)(std::move(t).value());
+            if constexpr (std::is_void_v<T>) {
+                return std::forward<F>(func)();
+            } else {
+                return std::forward<F>(func)(std::move(t).value());
+            }
         };
         using Func = decltype(lambda);
         return thenImpl<Func, TryCallableResult<T, Func>>(std::move(lambda));
@@ -305,6 +318,7 @@ template <typename T>
 Future<T> makeReadyFuture(std::exception_ptr ex) {
     return Future<T>(Try<T>(ex));
 }
+inline Future<void> makeReadyFuture() { return Future<void>(Try<void>(true)); }
 
 }  // namespace async_simple
 
