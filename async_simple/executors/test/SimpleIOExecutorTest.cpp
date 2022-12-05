@@ -57,11 +57,11 @@ TEST_F(SimpleIOExecutorTest, testNormal) {
     auto output = memalign(4096, kBufferSize);
     memcpy((char*)output, expect.data(), expect.length());
     _executor->submitIO(
-        fd, IOCB_CMD_PWRITE, output, expect.length(), 0,
+        fd, IO_CMD_PWRITE, output, expect.length(), 0,
         [](io_event_t& event) mutable { EXPECT_EQ(4096, (int32_t)event.res); });
     std::this_thread::sleep_for(300ms);
     memset(output, 0, kBufferSize);
-    _executor->submitIO(fd, IOCB_CMD_PREAD, output, kBufferSize, 0,
+    _executor->submitIO(fd, IO_CMD_PREAD, output, kBufferSize, 0,
                         [&expect, output](io_event_t event) mutable {
                             EXPECT_EQ(4096, (int32_t)event.res);
                             EXPECT_EQ(expect,
@@ -77,7 +77,7 @@ TEST_F(SimpleIOExecutorTest, testException) {
     auto output = memalign(4096, kBufferSize);
     memset(output, 0, kBufferSize);
     _executor->submitIO(
-        -1, IOCB_CMD_PREAD, output, kBufferSize, 0,
+        -1, IO_CMD_PREAD, output, kBufferSize, 0,
         [](io_event_t& event) mutable { EXPECT_TRUE((int32_t)event.res < 0); });
     std::this_thread::sleep_for(300ms);
     free(output);

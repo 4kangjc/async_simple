@@ -24,7 +24,39 @@
 
 namespace async_simple {
 
+#ifndef ASYNC_SIMPLE_HAS_NOT_AIO
+using io_event_t = struct io_event;
+#else
+enum iocb_cmd {
+    IO_CMD_PREAD = 0,
+    IO_CMD_PWRITE = 1,
+    IO_CMD_FSYNC = 2,
+    IO_CMD_FDSYNC = 3,
+    /* These two are experimental.
+     * IO_CMD_PREADX = 4,
+     * IO_CMD_POLL = 5,
+     */
+    IO_CMD_NOOP = 6,
+    IO_CMD_PREADV = 7,
+    IO_CMD_PWRITEV = 8,
+};
+
+struct io_event_t {
+    void* data;
+    void* obj;
+    uint64_t res;
+    uint64_t res2;
+};
+#endif
+
+struct IOCallback : public std::function<void(io_event_t&)> {
+    using AIOFunc = std::function<void(io_event_t&)>;
+    using AIOFunc::AIOFunc;
+};
+
 namespace executors {
+
+using AIOCallback = IOCallback;
 
 // This is a demo IOExecutor.
 //  submitIO and submitIOV should be implemented.
@@ -99,10 +131,10 @@ public:
     }
 
 public:
-    void submitIO([[maybe_unused]] int fd, [[maybe_unused]] iocb_cmd cmd,
+    void submitIO([[maybe_unused]] int fd, [[maybe_unused]] IOOPCode cmd,
                   [[maybe_unused]] void* buffer, [[maybe_unused]] size_t length,
                   [[maybe_unused]] off_t offset,
-                  [[maybe_unused]] AIOCallback cbfn) override {
+                  [[maybe_unused]] IOCallback cbfn) override {
 #ifndef ASYNC_SIMPLE_HAS_NOT_AIO
         iocb io;
         memset(&io, 0, sizeof(iocb));
@@ -124,10 +156,10 @@ public:
         }
 #endif
     }
-    void submitIOV([[maybe_unused]] int fd, [[maybe_unused]] iocb_cmd cmd,
+    void submitIOV([[maybe_unused]] int fd, [[maybe_unused]] IOOPCode cmd,
                    [[maybe_unused]] const iovec_t* iov,
                    [[maybe_unused]] size_t count, [[maybe_unused]] off_t offset,
-                   [[maybe_unused]] AIOCallback cbfn) override {
+                   [[maybe_unused]] IOCallback cbfn) override {
 #ifndef ASYNC_SIMPLE_HAS_NOT_AIO
         iocb io;
         memset(&io, 0, sizeof(iocb));
@@ -157,6 +189,17 @@ private:
 #endif
     std::thread _loopThread;
 };
+
+// class AsioExecutor : public IOExecutor {
+//     void submitIO(int fd, IOOPCode opcode, void* buffer, size_t length,
+//                  off_t offset, IOCallback cb) override {
+
+//     }
+// };
+
+// class UringExecutor : public IOExecutor {
+
+// };
 
 }  // namespace executors
 

@@ -45,7 +45,7 @@ std::size_t Uthread_read_some(FileDescriptor fd, Buffer buffer,
     Promise<std::size_t> p;
 
     e->getIOExecutor()->submitIO(
-        fd, IOCB_CMD_PREAD, buffer, buffer_size, offset,
+        fd, IO_CMD_PREAD, buffer, buffer_size, offset,
         [&p](io_event_t event) mutable { p.setValue(event.res); });
     return uthread::await(p.getFuture().via(e));
 }
@@ -75,7 +75,7 @@ template <typename FileDescriptor, typename Buffer, typename Executor>
 Lazy<std::size_t> async_read_some(FileDescriptor fd, Buffer buffer,
                                   int buffer_size, int offset, Executor *e) {
     Promise<std::size_t> p;
-    e->submitIO(fd, IOCB_CMD_PREAD, buffer, buffer_size, 0,
+    e->submitIO(fd, IO_CMD_PREAD, buffer, buffer_size, 0,
                 [&p](io_event_t event) { p.setValue(event.res); });
     co_return co_await p.getFuture();
 }
