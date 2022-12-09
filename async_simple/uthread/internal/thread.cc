@@ -55,13 +55,12 @@ inline void jmp_buf_link::switch_in() {
     link = std::exchange(g_current_context, this);
     if (!link)
         AS_UNLIKELY { link = &g_unthreaded_context; }
-    fcontext = _fl_jump_fcontext(fcontext, thread).fctx;
+    fcontext = _fl_jump_fcontext(fcontext, nullptr).fctx;
 }
 
 inline void jmp_buf_link::switch_out() {
     g_current_context = link;
-    auto from = _fl_jump_fcontext(link->fcontext, nullptr).fctx;
-    link->fcontext = from;
+    link->fcontext = _fl_jump_fcontext(link->fcontext, nullptr).fctx;
 }
 
 inline void jmp_buf_link::initial_switch_in_completed() {}
@@ -95,7 +94,7 @@ void thread_context::switch_in() { context_.switch_in(); }
 void thread_context::switch_out() { context_.switch_out(); }
 
 void thread_context::s_main(transfer_t t) {
-    auto q = reinterpret_cast<thread_context*>(t.data);
+    auto q = g_current_context->thread;
     q->context_.link->fcontext = t.fctx;
     q->main();
 }
