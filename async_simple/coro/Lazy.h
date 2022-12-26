@@ -70,8 +70,11 @@ public:
     struct FinalAwaiter {
         bool await_ready() const noexcept { return false; }
         template <typename PromiseType>
-        auto await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
-            return h.promise()._continuation;
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
+            if (auto continuation = h.promise()._continuation) {
+                return continuation;
+            }
+            return std::noop_coroutine();
         }
         void await_resume() noexcept {}
     };
@@ -278,6 +281,10 @@ public:
         AS_INLINE Try<T> await_resume() noexcept {
             return AwaiterBase::awaitResumeTry();
         };
+        auto coAwait(Executor* ex) {
+            _coro.promise()._executor = ex;
+            return std::move(*this);
+        }
     };
 
     struct ValueAwaiter : public AwaiterBase {
